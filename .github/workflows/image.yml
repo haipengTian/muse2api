@@ -69,8 +69,11 @@ jobs:
                 fi
               done
             '
-      - name: Admin error-message regression
-        run: node tests/test_admin_api_error_messages.mjs
+      - name: JavaScript regressions
+        run: |
+          for test in tests/test_*.mjs; do
+            node "$test"
+          done
       - name: Smoke test the candidate service
         shell: bash
         env:

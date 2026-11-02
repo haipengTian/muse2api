@@ -38,6 +38,10 @@ const I18N_EN = {
   '请先填服务地址': 'Please enter the service URL first',
   '请先填 API Key': 'Please enter the API Key first',
   '正在读取 muse.ai 的 Cookie…': 'Reading muse.ai cookies…',
+  '未找到当前标签页，请在已登录 Muse 的浏览器窗口重试':
+    'No active tab found. Try again in the browser window where Muse is logged in.',
+  '无法确定当前窗口的 Cookie 存储，请在已登录 Muse 的同一窗口重试':
+    'Could not identify this window\'s cookie store. Try again in the same window where Muse is logged in.',
   '没读到 muse.ai 的 Cookie。\n请先在这个浏览器里打开并登录 https://muse.ai/ ，再回来点一次。':
     'No muse.ai cookies found.\nOpen and log in to https://muse.ai/ in this browser first, then click again.',
   '读到 {n} 条 Cookie，但缺核心项：{missing}\n说明这个浏览器还没登录成功。请登录到能看到聊天界面再试。':
@@ -149,11 +153,22 @@ async function saveCfg() {
 }
 
 async function grabCookies() {
-  const all = await chrome.cookies.getAll({ domain: 'muse.ai' });
-  const out = {}, exp = {};
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!Number.isInteger(tab?.id)) {
+    throw new Error(t('未找到当前标签页，请在已登录 Muse 的浏览器窗口重试'));
+  }
+  const stores = await chrome.cookies.getAllCookieStores();
+  const store = stores.find(s => s.tabIds.includes(tab.id));
+  if (!store) {
+    throw new Error(t('无法确定当前窗口的 Cookie 存储，请在已登录 Muse 的同一窗口重试'));
+  }
+  // The extension's default execution store can differ from an incognito tab's.
+  // URL scoping also excludes other subdomains and unrelated cookie paths.
+  const all = await chrome.cookies.getAll({ url: 'https://muse.ai/api/session', storeId: store.id });
+  const out = Object.create(null), exp = Object.create(null);
   for (const c of all) {
-    const dom = (c.domain || '').replace(/^\./, '');
-    if (!dom.endsWith('muse.ai')) continue;
+    // Chrome orders longest paths first, then earliest creation: keep the first.
+    if (Object.prototype.hasOwnProperty.call(out, c.name)) continue;
     out[c.name] = c.value;
     if (c.expirationDate) exp[c.name] = Math.floor(c.expirationDate);
   }
