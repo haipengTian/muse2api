@@ -61,7 +61,7 @@ if not log.handlers:
     log.addHandler(_h)
 
 CFG.ensure_dirs()
-app = FastAPI(title="muse2api", version="1.6.4")
+app = FastAPI(title="muse2api", version=os.environ.get("MUSE2API_IMAGE_VERSION") or "1.6.4")
 
 # Cookie 助手脚本从 muse.ai 页面发起导入请求，需要放行该来源；
 # 浏览器扩展从 chrome-extension:// 发起，也一并放行。
@@ -2410,6 +2410,8 @@ def _check_update_sync(force: bool = False) -> dict:
 
 def _upgrade_from_github_sync() -> dict:
     """从 GitHub 拉取最新代码覆盖核心文件（兼容 Git 与无 Git 的 Docker/ZIP 环境），绝不触碰 .env 与 data/。"""
+    if os.environ.get("MUSE2API_IMAGE_VERSION", ""):
+        raise HTTPException(409, "当前使用个人固定版本镜像，请拉取并重建容器更新，不支持覆盖容器内代码")
     import requests
     import tarfile
 

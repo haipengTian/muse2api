@@ -42,6 +42,47 @@ MAX_REFERENCE_TOTAL_BYTES = 24 * 1024 * 1024
 ESSENTIAL_COOKIES = ("hatch_sess", "hatch_vml")
 
 
+def _session_probe_summary(body) -> str:
+    """Describe the session shape without logging identifiers or arbitrary values."""
+    def kind(value):
+        if value is None:
+            return "null"
+        if isinstance(value, dict):
+            return "object"
+        if isinstance(value, list):
+            return "array"
+        if isinstance(value, str):
+            return "string"
+        if isinstance(value, bool):
+            return "boolean"
+        return "number"
+
+    def state(name, allowed):
+        if not isinstance(body, dict) or name not in body:
+            return "<missing>"
+        value = body[name]
+        # Do not echo unknown strings, even short strings: they may be tokens.
+        return value if isinstance(value, str) and value in allowed else "<other>"
+
+    summary = {
+        "json_type": kind(body),
+        "status": state("status", {
+            "assigned", "unassigned", "unauthenticated", "unauthorized", "pending",
+            "waiting", "queued", "error", "disabled", "blocked", "unavailable",
+        }),
+        "vm_state": state("vm_state", {
+            "RUNNING", "STOPPED", "STARTING", "SUSPENDED", "DISABLED", "PENDING",
+            "STOPPING", "FAILED", "UNKNOWN",
+        }),
+        "fields": {
+            key: kind(body[key]) for key in (
+                "status", "vm_state", "vm_id", "endpoint_url", "vms", "error", "message",
+            ) if isinstance(body, dict) and key in body
+        },
+    }
+    return json.dumps(summary, ensure_ascii=True)
+
+
 class MuseAuthError(RuntimeError):
     pass
 
@@ -343,9 +384,13 @@ class MuseEngine:
         try:
             sj = r.json()
         except ValueError:
+            log.warning("session_probe http=200 json_type=non_json")
             raise MuseGenerationError("/api/session HTTP 200 返回非 JSON；会话状态未确认") from None
         if not isinstance(sj, dict) or sj.get("status") != "assigned":
-            raise MuseGenerationError("/api/session HTTP 200 未返回 assigned 会话；请在官网检查账号/工作区状态")
+            summary = _session_probe_summary(sj)
+            log.warning("session_probe http=200 %s", summary)
+            raise MuseGenerationError(
+                "/api/session HTTP 200 未返回 assigned 会话；请在官网检查账号/工作区状态；诊断: " + summary)
         for c in r.cookies:
             if c.value:
                 cur_cookies[c.name] = c.value

@@ -1,5 +1,7 @@
 # MUSE2API
 
+> 个人镜像发行与已有服务更新步骤见 [CUSTOM.md](CUSTOM.md)。上游项目：[czg86389-hub/muse2api](https://github.com/czg86389-hub/muse2api)。
+
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python" alt="Python Version" />
   <img src="https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi" alt="FastAPI" />

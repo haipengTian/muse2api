@@ -1,5 +1,8 @@
 FROM python:3.11-slim-bookworm
 
+ARG MUSE2API_IMAGE_VERSION=""
+ENV MUSE2API_IMAGE_VERSION=${MUSE2API_IMAGE_VERSION}
+
 # 基础环境与 Chromium 安装
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -27,7 +30,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制代码与必要目录
-COPY admin.html app.py cdp.py config.py engine.py store.py version.json ./
+COPY admin.html app.py cdp.py config.py engine.py store.py version.json LICENSE ./
 COPY deploy/ ./deploy/
 COPY extension/ ./extension/
 COPY tools/ ./tools/
