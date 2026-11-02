@@ -15,6 +15,27 @@
 
 这一版提供定位证据，尚未确认或修复服务器会话异常的根因。镜像发布前运行离线回归、隔离 Chromium 测试及服务启动检查；真实账号保活和生成需在服务器更新后验证。
 
+## 一次对比服务器 HTTP 与浏览器会话
+
+官网正常、服务器返回 `unavailable` 时，可直接使用容器已保存的账号检查，不需要手工复制 Cookie，也不必先更新镜像。适用于 `1.6.4-custom.2` 及之后的个人镜像：
+
+```bash
+(set -o pipefail; curl -fsSL --connect-timeout 10 --max-time 60 \
+  https://raw.githubusercontent.com/haipengTian/muse2api/main/tools/diagnose_session.py \
+  | docker exec -i muse2api python -)
+```
+
+默认选择最近导入的启用账号，输出其账号 ID，以及 HTTP 和独立 Chromium 的脱敏会话状态。临时浏览器使用独立端口、数据目录和配置；检查结束后清理。脚本不写账号文件、不唤醒 VM、不提交生成任务、不重启服务。检查会额外启动一个临时 Chromium，建议在没有生成任务时执行。
+
+输出的 `conclusion`：
+- `browser_only`：容器浏览器拿到分配，HTTP 请求未拿到；重点查请求方式和会话续签差异。
+- `both_unavailable`：同一份导入 Cookie 的两条容器请求都返回不可用；继续核对导入来源与服务器访问环境。
+- `both_assigned`：两条请求当前均拿到分配，回到后台验证真实生成。
+- `http_only`：HTTP 分配正常，继续查浏览器加载和 Cookie 注入。
+- `inconclusive`：检查未取得足够的会话结果，查看对应的固定错误类型。
+
+分享检查结果即可，不要分享账号数据文件、Cookie 或完整网络请求。需要指定账号时，在命令的 `python -` 后加 `--account 账号ID`。
+
 ## 更新已有 Docker Compose 部署
 
 先确认现有容器的 Compose 文件、数据挂载及架构，不要删除容器数据：
