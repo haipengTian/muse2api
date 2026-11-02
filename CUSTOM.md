@@ -2,9 +2,11 @@
 
 源码：[haipengTian/muse2api](https://github.com/haipengTian/muse2api)，基于 [czg86389-hub/muse2api](https://github.com/czg86389-hub/muse2api)，沿用 MIT 许可。
 
-## 1.6.4-custom.1
+## 1.6.4-custom.2
 
-镜像：`ghcr.io/haipengtian/muse2api:1.6.4-custom.1`，支持 **Linux amd64（x86_64）**。
+镜像：`ghcr.io/haipengtian/muse2api:1.6.4-custom.2`，支持 **Linux amd64（x86_64）**。
+
+`custom.1` 的构建未通过启动检查，未发布镜像；`custom.2` 修正了容器启动时连接重置的检查重试。
 
 - 基于上游 1.6.4；保留接口、账号数据结构、端口 18610 和 `/app/data` 持久化路径。
 - `/api/session` 返回 HTTP 200 但会话未分配时，日志增加 `session_probe`：只记录固定白名单状态及已知字段的类型。不记录 Cookie、令牌、VM 标识、地址、错误正文或其他响应内容。未知状态显示 `<other>`，缺失字段显示 `<missing>`。
