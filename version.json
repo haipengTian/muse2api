@@ -1,13 +1,15 @@
 {
-  "version": "1.6.4-custom.2",
+  "version": "1.6.4-custom.3",
   "updated_at": "2026-11-02",
   "repo": "https://github.com/haipengTian/muse2api",
   "highlights": [
-    "基于上游 1.6.4，增加安全脱敏的 session_probe 诊断，定位 HTTP 200 但未分配会话的问题。",
-    "提供个人 GHCR 固定版本镜像，禁止后台在线更新覆盖镜像内代码；通过换镜像升级。"
+    "附件清理限定在聊天输入区，避免触发侧栏或页面其他区域的删除操作。",
+    "切换会话后确认聊天输入框与网关就绪，页面准备失败时停止发送，不再忽略错误。",
+    "包含扩展 1.0.2，按当前普通/无痕窗口及会话 URL 读取 Cookie。"
   ],
   "highlights_en": [
-    "Based on upstream 1.6.4; add allowlisted session_probe diagnostics for HTTP 200 responses without an assigned session.",
-    "Publish a versioned personal GHCR image; replace the image to upgrade instead of overwriting running code."
+    "Scope attachment cleanup to the composer, avoiding delete actions in sidebars and other page areas.",
+    "Confirm composer and gateway readiness after resetting a thread; stop sending when page preparation fails.",
+    "Include extension 1.0.2 with cookie selection scoped to the current regular/incognito window and session URL."
   ]
 }

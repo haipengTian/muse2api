@@ -2,6 +2,18 @@
 
 源码：[haipengTian/muse2api](https://github.com/haipengTian/muse2api)，基于 [czg86389-hub/muse2api](https://github.com/czg86389-hub/muse2api)，沿用 MIT 许可。
 
+## 1.6.4-custom.3
+
+镜像：`ghcr.io/haipengtian/muse2api:1.6.4-custom.3`，支持 **Linux amd64（x86_64）**。
+
+修正“账号测试通过、生成时找不到聊天输入框”相关的两处页面操作缺陷：
+- 清理附件只操作 composer 表单内的附件按钮与文件输入框，找不到 composer 时不操作其他区域；避免原来扫描整页“删除”按钮的误点。
+- 切换新会话后等待输入框与网关就绪；等待失败或导航异常时停止发送并报告页面准备失败。保留无需导航的热对话复用。
+
+同时包含扩展 1.0.2 和只读诊断工具。独立 HTTP 保活仍以 `/api/session` 的实际返回为准；本版不把 `unavailable` 改写成保活成功。
+
+回归使用真实 Chromium 的离线页面复现“全局删除按钮移除 composer”，以及页面等待失败、导航失败、热对话复用。真实账号生成需部署后验收。
+
 ## 1.6.4-custom.2
 
 镜像：`ghcr.io/haipengtian/muse2api:1.6.4-custom.2`，支持 **Linux amd64（x86_64）**。

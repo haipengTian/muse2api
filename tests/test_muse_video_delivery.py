@@ -30,6 +30,22 @@ for name, connecting, hydrated, disabled, expected in (
     result = subprocess.check_output(["node", "-e", script], text=True).strip()
     assert result == expected, (name, result, expected)
 
+fresh_expression = next(n.args[0].value for n in ast.walk(method)
+                        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                        and n.func.attr == 'js' and isinstance(n.args[0], ast.Constant)
+                        and 'window.location.pathname' in n.args[0].value)
+for path, bubbles, attachments, expected in (
+        ('/thread/old', 0, 0, False),
+        ('/thread/new', 1, 0, False),
+        ('/thread/new', 0, 1, False),
+        ('/thread/new', 0, 0, True)):
+    script = """const window={location:{pathname:%s}};
+const scope={querySelectorAll:()=>Array(%d)};
+const document={querySelector:()=>scope,querySelectorAll:()=>Array(%d)};
+console.log(%s);""" % (json.dumps(path), bubbles, attachments, fresh_expression)
+    actual = subprocess.check_output(['node', '-e', script], text=True).strip()
+    assert actual == str(expected).lower(), (path, bubbles, attachments, actual)
+
 with tempfile.TemporaryDirectory() as profile:
     engine = engine_module.MuseEngine(SimpleNamespace(profile_dir=profile, login_wait=2))
     clock = [0.0]

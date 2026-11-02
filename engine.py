@@ -486,7 +486,8 @@ class MuseEngine:
             out[name] = {"value": c.get("value", ""), "expires": exp}
         return out
 
-    def _wait_ws_ready(self, page: CDP, timeout: float = 15.0) -> bool:
+    def _wait_ws_ready(self, page: CDP, timeout: float = 15.0,
+                       fresh_thread: bool = False) -> bool:
         """等待 muse.ai 页面完成 React hydration 且不再处于 Connecting... 状态。"""
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -503,7 +504,17 @@ class MuseEngine:
                     return 'ready';
                 })()""")
                 if st == "ready":
-                    return True
+                    if not fresh_thread:
+                        return True
+                    fresh = page.js("""(function(){
+                        var scope = document.querySelector('main,[class*="chat-scroll"],[class*="hatch-chat-scroll"]') || document.body;
+                        return window.location.pathname === '/thread/new'
+                            && !!scope
+                            && scope.querySelectorAll('div[class*="hatch-chat-groupable-bubble"]').length === 0
+                            && document.querySelectorAll('[data-testid^="hatch-chat-attachment-presentation-"]').length === 0;
+                    })()""")
+                    if fresh is True:
+                        return True
             except Exception:
                 pass
             time.sleep(0.1)
@@ -518,7 +529,7 @@ class MuseEngine:
             needs_nav = self.page.js("""(function(forChat){
                 var d = document.querySelector('[role="dialog"]');
                 if (d) {
-                    var b = d.querySelector('button[aria-label*="close" i], button');
+                    var b = d.querySelector('button[aria-label*="close" i], button[aria-label*="关闭"], button[aria-label*="關閉"]');
                     if (b) b.click();
                 }
                 var scope = document.querySelector('main,[class*="chat-scroll"],[class*="hatch-chat-scroll"]') || document.body;
@@ -535,21 +546,19 @@ class MuseEngine:
                 }
                 return (window.location.pathname !== '/thread/new') || bubbleCount > 0;
             })(%s)""" % ("true" if for_chat else "false"))
+            if type(needs_nav) is not bool:
+                raise MuseGenerationError("无法确认会话页面状态，已停止发送")
             if needs_nav:
-                self.page.send("Page.navigate", {"url": "https://muse.ai/thread/new"})
-                t_end = time.time() + 10.0
-                while time.time() < t_end:
-                    time.sleep(0.08)
-                    ready = self.page.js("""(function(){
-                        return document.readyState === 'complete'
-                            && !!document.querySelector('textarea')
-                            && document.querySelectorAll('div[class*="hatch-chat-groupable-bubble"]').length === 0;
-                    })()""")
-                    if ready:
-                        break
-                self._wait_ws_ready(self.page, timeout=12.0)
+                nav = self.page.send("Page.navigate", {"url": "https://muse.ai/thread/new"})
+                if nav.get("result", {}).get("errorText"):
+                    raise MuseGenerationError("切换新会话失败，已停止发送")
+            if not self._wait_ws_ready(self.page, timeout=getattr(self.cfg, "login_wait", 60),
+                                       fresh_thread=needs_nav):
+                raise MuseGenerationError("会话页面未就绪（聊天输入框或网关不可用），已停止发送")
+        except MuseGenerationError:
+            raise
         except Exception:
-            pass
+            raise MuseGenerationError("准备会话页面失败，已停止发送") from None
 
     def ensure_page(self, cookies: dict, expires: dict | None = None, account_id: str | None = None):
         if self.page is not None and (account_id is None or getattr(self, "current_acc_id", None) == account_id):
@@ -1391,16 +1400,20 @@ class MuseEngine:
         raise MuseGenerationError("参考图必须是 URL、Data URL、本地图片或有效 Base64")
 
     def _clear_attachments(self):
-        """清除聊天输入框里遗留的附件缩略图（兼容中/英文 UI）。"""
+        """只清除 composer 内的附件，不能点击侧栏或其他页面区域的删除操作。"""
         try:
             self.page.js(
                 "(function(){"
-                "var btns=Array.from(document.querySelectorAll('button[aria-label]')).filter(function(b){"
+                "var anchor=document.querySelector('textarea')"
+                "||document.querySelector('[data-testid=\"hatch-composer-placeholder-overlay\"]');"
+                "var composer=anchor?anchor.closest('form'):null;"
+                "if(!composer)return 0;"
+                "var btns=Array.from(composer.querySelectorAll('button[aria-label]')).filter(function(b){"
                 "var al=b.getAttribute('aria-label')||'';"
-                "return /remove\\s*attachment|移除附件|删除附件|移除|删除/i.test(al);"
+                "return /remove\\s*attachment|移除附件|删除附件|^移除$|^删除$/i.test(al);"
                 "});"
                 "btns.forEach(function(b){b.click();});"
-                "Array.from(document.querySelectorAll('input[type=\"file\"]')).forEach(function(inp){inp.value='';});"
+                "Array.from(composer.querySelectorAll('input[type=\"file\"]')).forEach(function(inp){inp.value='';});"
                 "return btns.length;"
                 "})()")
             time.sleep(0.3)

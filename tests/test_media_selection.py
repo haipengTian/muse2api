@@ -51,6 +51,23 @@ with tempfile.TemporaryDirectory(prefix='muse-media-test-', dir=Path.home(), ign
    engine._download_fallback('selected',timeout=0)
   else:engine._download_fallback(timeout=0)
   global_click=page.js('window.wrongDownload')
+  page.js('''document.body.innerHTML=`
+    <button aria-label="删除对话" onclick="window.deletedChat=true;document.querySelector('textarea').remove()">Delete chat</button>
+    <button aria-label="Remove attachment" onclick="window.outsideClicked=true">Other area</button>
+    <input id="outside-file" type="file">
+    <form><textarea></textarea>
+      <button type="button" aria-label="Remove attachment" onclick="window.removedAttachment=true">Remove</button>
+      <input type="file">
+    </form>`;
+    window.deletedChat=false;window.outsideClicked=false;window.removedAttachment=false;''')
+  engine._clear_attachments()
+  assert page.js('window.deletedChat') is False, 'attachment cleanup clicked a global Delete action'
+  assert page.js('window.outsideClicked') is False, 'attachment cleanup clicked outside the composer'
+  assert page.js('window.removedAttachment') is True, 'composer attachment was not removed'
+  assert page.js("!!document.querySelector('textarea')") is True, 'cleanup destroyed the chat composer'
+  page.js('''document.body.innerHTML='<button aria-label="删除" onclick="window.unrelatedDeleted=true">Delete</button>';window.unrelatedDeleted=false;''')
+  engine._clear_attachments()
+  assert page.js('window.unrelatedDeleted') is False, 'missing composer must not broaden cleanup scope'
   page.js('''document.body.innerHTML=`<button aria-label="Remove attachment" id="outside"></button><form><div data-testid="hatch-composer-placeholder-overlay"></div><input type="file"></form>`;
     document.querySelector('input').addEventListener('change',function(e){
       for (var i=0;i<e.target.files.length;i++) {
