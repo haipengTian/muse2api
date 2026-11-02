@@ -37,6 +37,16 @@
 
 ## 生成时报找不到输入框：实时观察页面
 
+已观察到输入框出现后消失时，可自动复现发送前的准备过程，无需手工点生成：
+
+```bash
+(set -o pipefail; curl -fsSL --connect-timeout 10 --max-time 60 \
+  https://raw.githubusercontent.com/haipengTian/muse2api/main/tools/watch_composer.py \
+  | docker exec -i muse2api python - --probe)
+```
+
+自动探测使用最近导入的启用账号和独立临时浏览器，跳过 HTTP 续签及 VM 唤醒，先被动观察初始化，再逐步执行切会话、滚动、清附件和聚焦；输入框消失后停止，不输入提示词或提交生成。输出只有阶段、页面状态、运行时错误类别及浏览器既有会话请求的白名单摘要。探测结束释放自身浏览器，不修改账号文件或生产服务配置。
+
 生成请求结束后会销毁其隔离页面，事后检查页面列表为空属于正常清理。需要在生成过程中观察：
 
 ```bash
