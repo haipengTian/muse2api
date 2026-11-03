@@ -189,6 +189,7 @@ def probe(cfg=CFG):
         isolated = replace(cfg, base_dir=tmp, profile_root=os.path.join(tmp, 'profiles'), cdp_port=port)
         isolated.ensure_dirs()
         engine = MuseEngine(isolated)
+        engine._ensure_local().proxy_snapshot = account.get('proxy')
         previous = None
 
         def collect_sessions(page):
@@ -216,8 +217,8 @@ def probe(cfg=CFG):
             engine.start()
             original_open = engine._open_page
 
-            def open_observed():
-                page = original_open()
+            def open_observed(*args, **kwargs):
+                page = original_open(*args, **kwargs)
                 page.timeout = 3
                 page.ws.settimeout(.5)
                 page.ws = EventSocket(page.ws, emit)

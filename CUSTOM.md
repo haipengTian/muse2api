@@ -2,6 +2,18 @@
 
 源码：[haipengTian/muse2api](https://github.com/haipengTian/muse2api)，基于 [czg86389-hub/muse2api](https://github.com/czg86389-hub/muse2api)，沿用 MIT 许可。
 
+## 1.6.6-custom.1
+
+镜像：`ghcr.io/haipengtian/muse2api:1.6.6-custom.1`，支持 **Linux amd64（x86_64）**。
+
+同步上游 1.6.6（`1cd0168`），包括 1.6.5 的账号独立 HTTP／SOCKS5 代理、隔离下载与视频延迟交付修复，以及 1.6.6 的仅 `hatch_sess` 导入兼容和扩展升级提示。未设置账号代理时沿用原来的直连路径，无需新增配置。
+
+保留个人版固定镜像更新方式、附件清理范围、切会话就绪检查和脱敏诊断。诊断工具同步支持已配置的账号代理，不输出代理密码。
+
+服务升级后，已加载的浏览器扩展不会自动替换。如需使用本次导入修正，下载后台提供的扩展包覆盖原目录，然后在扩展管理页重新加载；个人版旧 1.0.2 与本次上游 1.0.2 的导入条件不同，不能仅凭版本号判断已升级。
+
+此前“输入框出现后消失”的生产问题仍需升级后验证；上游本次更新没有明确修复该问题。
+
 ## 1.6.4-custom.3
 
 镜像：`ghcr.io/haipengtian/muse2api:1.6.4-custom.3`，支持 **Linux amd64（x86_64）**。

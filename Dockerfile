@@ -30,7 +30,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制代码与必要目录
-COPY admin.html app.py cdp.py config.py engine.py store.py version.json LICENSE ./
+COPY admin.html app.py cdp.py config.py engine.py store.py proxy.py version.json LICENSE ./
 COPY deploy/ ./deploy/
 COPY extension/ ./extension/
 COPY tools/ ./tools/

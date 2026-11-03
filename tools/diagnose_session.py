@@ -6,6 +6,7 @@ Run inside Muse2API 1.6.4-custom.2 or newer. No account writes or generation.
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 from dataclasses import replace
 import json
 import os
@@ -50,7 +51,7 @@ def summarize(body):
     return json.loads(_session_probe_summary(body))
 
 
-def http_probe(cookies):
+def http_probe(cookies, proxy=None):
     # Match the service request, including a raw Cookie header (no curl jar).
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
@@ -60,7 +61,14 @@ def http_probe(cookies):
         "Cookie": "; ".join(f"{k}={v}" for k, v in cookies.items() if v),
     }
     try:
-        response = requests.get(SESSION_URL, headers=headers, timeout=12, allow_redirects=False)
+        if proxy:
+            from proxy import request_proxy_context
+            routing = request_proxy_context(proxy)
+        else:
+            routing = nullcontext({})
+        with routing as options:
+            response = requests.get(SESSION_URL, headers=headers, timeout=12, allow_redirects=False,
+                                    **options)
         try:
             session = summarize(response.json())
         except ValueError:
@@ -83,7 +91,7 @@ def browser_probe(account, cfg):
             browser.start()
             browser.browser.timeout = 5
             browser.browser.ws.settimeout(5)
-            page = browser._open_page()
+            page = browser._open_page(proxy=account['proxy']) if account.get('proxy') else browser._open_page()
             page.timeout = 5
             page.ws.settimeout(5)
             browser.page = page
@@ -144,7 +152,7 @@ def run(cfg=CFG, account_id=None):
         print(json.dumps({"error": "account_not_found"}))
         return 2
     print("正在检查 HTTP 和独立浏览器会话，通常需几十秒……", file=sys.stderr, flush=True)
-    http = http_probe(account["cookies"])
+    http = http_probe(account["cookies"], **({'proxy': account['proxy']} if account.get('proxy') else {}))
     browser = browser_probe(account, cfg)
     report = {
         "account_id": account["id"],
