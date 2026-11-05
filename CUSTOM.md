@@ -2,6 +2,21 @@
 
 源码：[haipengTian/muse2api](https://github.com/haipengTian/muse2api)，基于 [czg86389-hub/muse2api](https://github.com/czg86389-hub/muse2api)，沿用 MIT 许可。
 
+## 1.6.7-custom.1
+
+镜像：`ghcr.io/haipengtian/muse2api:1.6.7-custom.1`，支持 **Linux amd64（x86_64）**。
+
+同步上游 1.6.7（`58c1e7c`）：
+- 适配新版无 overlay/form 的输入区，修正上传控件定位和附件确认；保留个人版清理范围限制，并补齐新版输入区的清理。
+- 图片和视频生成新增视频、音频、PDF/Word 参考素材，最多 10 个，单个 40 MiB、合计 100 MiB；参考视频必须有可读的有效时长且不超过 120 秒。
+- 混合素材支持 `[图N]`、`[视频N]`、`[音频N]`、`[文档N]` 对照；过滤原始参考素材，避免误当生成结果交付，修正临时文件清理。
+
+沿用现有账号、端口与数据卷，无需重新导入 Cookie。保留个人版固定镜像更新、会话诊断、切会话就绪检查和账号独立代理。
+
+新版扩大了素材大小限制。若使用较大的混合素材请求，需要在实际接收请求的 Nginx 中相应提高 `client_max_body_size`；上游示例已调整为 `200M`，现有小图/纯文本请求无需修改 Nginx。
+
+回归涵盖真实 Chromium 的新旧输入区、上传和清理；此前生产上的“输入框出现后消失”仍需部署后用真实生成确认。
+
 ## 1.6.6-custom.1
 
 镜像：`ghcr.io/haipengtian/muse2api:1.6.6-custom.1`，支持 **Linux amd64（x86_64）**。
